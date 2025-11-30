@@ -2,55 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Photo to PDF Converter</title>
     <link rel="stylesheet" href="styles.css">
+
 </head>
+
 <body>
+
+    <!-- BACKGROUND -->
+    <div class="background-animation">
+        <div class="gradient-orb orb1"></div>
+        <div class="gradient-orb orb2"></div>
+        <div class="gradient-orb orb3"></div>
+    </div>
+
     <div class="container">
         <header>
             <h1>📸 Photo to PDF Converter</h1>
-            <p class="subtitle">Upload multiple photos and convert them into a single PDF</p>
+            <p class="subtitle">Upload multiple photos and instantly generate a single merged PDF</p>
         </header>
 
         <main>
-            <!-- Upload Zone -->
+            <!-- UPLOAD ZONE -->
             <div class="upload-zone" id="uploadZone">
-                <div class="upload-content">
-                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <h2>Drag & Drop Images Here</h2>
-                    <p>or</p>
-                    <button type="button" class="btn btn-primary" id="filePickerBtn">Choose Files</button>
-                    <input type="file" id="fileInput" multiple accept="image/jpeg,image/png,image/webp,image/bmp,image/tiff" hidden>
-                    <p class="file-info">Supported: JPEG, PNG, WEBP, BMP, TIFF (Max 50 images, 50MB total)</p>
-                </div>
+                <h2>Drag & Drop Images</h2>
+                <p style="margin: 8px 0;">or</p>
+
+                <button class="btn btn-primary" id="filePickerBtn">Choose Files</button>
+                <input type="file" id="fileInput" multiple hidden accept="image/*">
+
+                <p style="margin-top: 10px; color: var(--text-secondary); font-size:0.9rem;">
+                    Supports JPEG, PNG, WEBP, BMP, TIFF — Max 50 images & 50MB
+                </p>
             </div>
 
-            <!-- Preview Section -->
-            <div class="preview-section" id="previewSection" style="display: none;">
+            <!-- PREVIEW SECTION -->
+            <div class="preview-section" id="previewSection">
                 <div class="preview-header">
                     <h2>Selected Images (<span id="imageCount">0</span>)</h2>
-                    <div class="action-buttons">
-                        <button type="button" class="btn btn-secondary" id="clearAllBtn">Clear All</button>
-                        <button type="button" class="btn btn-success" id="generatePdfBtn">
+
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-secondary" id="clearAllBtn">Clear All</button>
+                        <button class="btn btn-success" id="generatePdfBtn">
                             <span class="btn-text">Generate PDF</span>
-                            <span class="btn-loader" style="display: none;"></span>
+                            <span class="btn-loader" style="display:none;"></span>
                         </button>
                     </div>
                 </div>
+
                 <div class="preview-grid" id="previewGrid"></div>
             </div>
 
-            <!-- Status Message -->
             <div class="status-message" id="statusMessage"></div>
         </main>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
-
