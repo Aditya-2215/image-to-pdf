@@ -2,7 +2,7 @@
 let files = [];
 const MAX_FILES = 50;
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
-const API_URL = "https://backend-pdf-zzjl.onrender.com/generate";
+const API_URL = "/api/generate-pdf";
 
 
 /* ================= ELEMENTS ================= */
