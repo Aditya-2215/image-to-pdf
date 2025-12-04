@@ -14,16 +14,7 @@ const imageCount = document.getElementById("imageCount");
 const clearAllBtn = document.getElementById("clearAllBtn");
 const generatePdfBtn = document.getElementById("generatePdfBtn");
 const statusMessage = document.getElementById("statusMessage");
-const API_URL = "https://backend-82dc.onrender.com";
 
-async function uploadImage(formData) {
-    const response = await fetch(`${API_URL}/convert`, {
-        method: "POST",
-        body: formData
-    });
-
-    return response.blob();
-}
 
 /* ================= EVENTS ================= */
 filePickerBtn.onclick = () => fileInput.click();
