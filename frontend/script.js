@@ -5,8 +5,6 @@ const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
 
 const API_URL = "https://backend-pdf-zzjl.onrender.com/generate";
 
-
-
 /* ================= ELEMENTS ================= */
 const uploadZone = document.getElementById("uploadZone");
 const fileInput = document.getElementById("fileInput");
@@ -18,19 +16,66 @@ const clearAllBtn = document.getElementById("clearAllBtn");
 const generatePdfBtn = document.getElementById("generatePdfBtn");
 const statusMessage = document.getElementById("statusMessage");
 
+/* ================= PERFORMANCE UTILITIES ================= */
+
+// Debounce function to prevent excessive updates
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Request Animation Frame wrapper for smooth UI updates
+function smoothUpdate(callback) {
+    requestAnimationFrame(() => {
+        callback();
+    });
+}
+
+// Object URL cache to prevent memory leaks
+const urlCache = new Map();
+
+function createObjectURL(file) {
+    const key = `${file.name}-${file.size}-${file.lastModified}`;
+    if (!urlCache.has(key)) {
+        urlCache.set(key, URL.createObjectURL(file));
+    }
+    return urlCache.get(key);
+}
+
+function clearURLCache() {
+    urlCache.forEach(url => URL.revokeObjectURL(url));
+    urlCache.clear();
+}
 
 /* ================= EVENTS ================= */
 filePickerBtn.onclick = () => fileInput.click();
 fileInput.onchange = (e) => processFiles([...e.target.files]);
-uploadZone.onclick = () => fileInput.click();
+uploadZone.onclick = (e) => {
+    // Prevent click when clicking on child elements
+    if (e.target === uploadZone) {
+        fileInput.click();
+    }
+};
 
 uploadZone.addEventListener("dragover", (e) => {
     e.preventDefault();
     uploadZone.classList.add("drag-over");
 });
-uploadZone.addEventListener("dragleave", () =>
-    uploadZone.classList.remove("drag-over")
-);
+
+uploadZone.addEventListener("dragleave", (e) => {
+    // Only remove if leaving the upload zone itself
+    if (e.target === uploadZone) {
+        uploadZone.classList.remove("drag-over");
+    }
+});
+
 uploadZone.addEventListener("drop", (e) => {
     e.preventDefault();
     uploadZone.classList.remove("drag-over");
@@ -40,68 +85,127 @@ uploadZone.addEventListener("drop", (e) => {
 clearAllBtn.onclick = clearAll;
 generatePdfBtn.onclick = generatePDF;
 
-/* ================= LOGIC ================= */
+/* ================= OPTIMIZED LOGIC ================= */
 
 function processFiles(newFiles) {
+    // Filter and validate files first
+    const validFiles = [];
     let currentSize = files.reduce((t, f) => t + f.size, 0);
+    let hasError = false;
 
     for (let file of newFiles) {
+        // Check file type
         if (!file.type.startsWith("image/")) {
-            showStatus("Only image files allowed.", "error");
+            if (!hasError) {
+                showStatus("Only image files allowed.", "error");
+                hasError = true;
+            }
             continue;
         }
-        if (files.length >= MAX_FILES) {
-            showStatus("Maximum 50 images allowed.", "error");
+
+        // Check max files
+        if (files.length + validFiles.length >= MAX_FILES) {
+            if (!hasError) {
+                showStatus("Maximum 50 images allowed.", "error");
+                hasError = true;
+            }
             break;
         }
+
+        // Check total size
         if (currentSize + file.size > MAX_TOTAL_SIZE) {
-            showStatus("Total size exceeds 50MB.", "error");
+            if (!hasError) {
+                showStatus("Total size exceeds 50MB.", "error");
+                hasError = true;
+            }
             break;
         }
 
         currentSize += file.size;
-        files.push(file);
+        validFiles.push(file);
     }
 
-    updatePreview();
+    // Batch add files
+    if (validFiles.length > 0) {
+        files.push(...validFiles);
+        updatePreviewOptimized();
+    }
+
+    // Reset file input
+    fileInput.value = '';
 }
 
-function updatePreview() {
-    if (files.length === 0) {
-        previewSection.style.display = "none";
-        return;
-    }
+// Optimized preview update with batching
+function updatePreviewOptimized() {
+    smoothUpdate(() => {
+        if (files.length === 0) {
+            previewSection.style.display = "none";
+            clearURLCache();
+            return;
+        }
 
-    previewSection.style.display = "block";
-    imageCount.textContent = files.length;
-    previewGrid.innerHTML = "";
+        previewSection.style.display = "block";
+        imageCount.textContent = files.length;
 
-    files.forEach((file, index) => {
-        const div = document.createElement("div");
-        div.className = "preview-item";
+        // Use DocumentFragment for batch DOM insertion
+        const fragment = document.createDocumentFragment();
 
-        div.innerHTML = `
-            <img src="${URL.createObjectURL(file)}">
-            <div class="preview-item-info">
-                <span>#${index + 1}</span>
-                <button class="btn-remove" onclick="removeFile(${index})">×</button>
-            </div>
-        `;
+        files.forEach((file, index) => {
+            const div = document.createElement("div");
+            div.className = "preview-item";
 
-        previewGrid.appendChild(div);
+            const imgUrl = createObjectURL(file);
+            
+            div.innerHTML = `
+                <img src="${imgUrl}" alt="Preview ${index + 1}" loading="lazy">
+                <div class="preview-item-info">
+                    <span>#${index + 1}</span>
+                    <button class="btn-remove" data-index="${index}" aria-label="Remove image">×</button>
+                </div>
+            `;
+
+            // Add load event for smooth image appearance
+            const img = div.querySelector('img');
+            img.onload = function() {
+                this.classList.add('loaded');
+            };
+
+            fragment.appendChild(div);
+        });
+
+        // Clear and append in one operation
+        previewGrid.innerHTML = "";
+        previewGrid.appendChild(fragment);
+
+        // Event delegation for remove buttons
+        attachRemoveListeners();
     });
 }
 
+// Event delegation for better performance
+function attachRemoveListeners() {
+    previewGrid.onclick = (e) => {
+        if (e.target.classList.contains('btn-remove')) {
+            const index = parseInt(e.target.dataset.index);
+            removeFile(index);
+        }
+    };
+}
+
 function removeFile(index) {
-    files.splice(index, 1);
-    updatePreview();
-    showStatus("Image removed.", "info");
+    smoothUpdate(() => {
+        files.splice(index, 1);
+        updatePreviewOptimized();
+        showStatus("Image removed.", "info");
+    });
 }
 
 function clearAll() {
-    files = [];
-    updatePreview();
-    showStatus("All images cleared.", "info");
+    smoothUpdate(() => {
+        files = [];
+        updatePreviewOptimized();
+        showStatus("All images cleared.", "info");
+    });
 }
 
 async function generatePDF() {
@@ -110,14 +214,20 @@ async function generatePDF() {
         return;
     }
 
+    // Disable button and show loader
     generatePdfBtn.disabled = true;
     const loader = generatePdfBtn.querySelector(".btn-loader");
     const text = generatePdfBtn.querySelector(".btn-text");
-    loader.style.display = "block";
-    text.style.display = "none";
+    
+    smoothUpdate(() => {
+        if (loader) loader.style.display = "block";
+        if (text) text.style.display = "none";
+    });
 
     try {
         const formData = new FormData();
+        
+        // Batch append files
         files.forEach(f => formData.append("images", f));
 
         const res = await fetch(API_URL, {
@@ -125,35 +235,80 @@ async function generatePDF() {
             body: formData
         });
 
-        if (!res.ok) throw new Error("Server error occurred.");
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || "Server error occurred.");
+        }
 
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "converted.pdf";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        
+        // Use modern download approach
+        downloadBlob(blob, "converted.pdf");
 
         showStatus("PDF downloaded successfully.", "success");
+        
     } catch (err) {
-        showStatus(err.message, "error");
+        console.error("PDF generation error:", err);
+        showStatus(err.message || "Failed to generate PDF.", "error");
+    } finally {
+        // Re-enable button
+        smoothUpdate(() => {
+            generatePdfBtn.disabled = false;
+            if (loader) loader.style.display = "none";
+            if (text) text.style.display = "block";
+        });
     }
-
-    generatePdfBtn.disabled = false;
-    loader.style.display = "none";
-    text.style.display = "block";
 }
 
-function showStatus(msg, type) {
-    statusMessage.innerText = msg;
-    statusMessage.className = "status-message show " + type;
-
+// Optimized download function
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = filename;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    // Cleanup
     setTimeout(() => {
-        statusMessage.classList.remove("show");
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+// Optimized status message with auto-hide
+let statusTimeout;
+function showStatus(msg, type) {
+    smoothUpdate(() => {
+        statusMessage.innerText = msg;
+        statusMessage.className = "status-message show " + type;
+    });
+
+    // Clear existing timeout
+    if (statusTimeout) {
+        clearTimeout(statusTimeout);
+    }
+
+    // Auto-hide after 3 seconds
+    statusTimeout = setTimeout(() => {
+        smoothUpdate(() => {
+            statusMessage.classList.remove("show");
+        });
     }, 3000);
 }
 
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    clearURLCache();
+});
+
+// Prevent memory leaks from drag events
+window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+}, false);
+
+window.addEventListener('drop', (e) => {
+    e.preventDefault();
+}, false);

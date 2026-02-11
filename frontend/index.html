@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Photo to PDF Converter</title>
+    <meta name="description" content="Upload multiple photos and instantly generate a single merged PDF - fast, free, and easy to use">
+    
+    <!-- Preload critical CSS -->
+    <link rel="preload" href="styles.css" as="style">
     <link rel="stylesheet" href="styles.css">
+    
     <meta name="google-adsense-account" content="ca-pub-2555301465901555">
-
 </head>
 
 <body>
 
     <!-- BACKGROUND -->
-    <div class="background-animation">
+    <div class="background-animation" aria-hidden="true">
         <div class="gradient-orb orb1"></div>
         <div class="gradient-orb orb2"></div>
         <div class="gradient-orb orb3"></div>
@@ -26,12 +30,12 @@
 
         <main>
             <!-- UPLOAD ZONE -->
-            <div class="upload-zone" id="uploadZone">
+            <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Upload images">
                 <h2>Drag & Drop Images</h2>
                 <p style="margin: 8px 0;">or</p>
 
-                <button class="btn btn-primary" id="filePickerBtn">Choose Files</button>
-                <input type="file" id="fileInput" multiple hidden accept="image/*">
+                <button class="btn btn-primary" id="filePickerBtn" type="button">Choose Files</button>
+                <input type="file" id="fileInput" multiple hidden accept="image/*" aria-label="File input">
 
                 <p style="margin-top: 10px; color: var(--text-secondary); font-size:0.9rem;">
                     Supports JPEG, PNG, WEBP, BMP, TIFF — Max 50 images & 50MB
@@ -44,21 +48,23 @@
                     <h2>Selected Images (<span id="imageCount">0</span>)</h2>
 
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <button class="btn btn-secondary" id="clearAllBtn">Clear All</button>
-                        <button class="btn btn-success" id="generatePdfBtn">
+                        <button class="btn btn-secondary" id="clearAllBtn" type="button">Clear All</button>
+                        <button class="btn btn-success" id="generatePdfBtn" type="button">
                             <span class="btn-text">Generate PDF</span>
-                            <span class="btn-loader" style="display:none;"></span>
+                            <span class="btn-loader" style="display:none;" role="status" aria-label="Loading"></span>
                         </button>
                     </div>
                 </div>
 
-                <div class="preview-grid" id="previewGrid"></div>
+                <div class="preview-grid" id="previewGrid" role="list"></div>
             </div>
 
-            <div class="status-message" id="statusMessage"></div>
+            <div class="status-message" id="statusMessage" role="alert" aria-live="polite"></div>
         </main>
     </div>
-    <script src="script.js"></script>
+
+    <!-- Defer non-critical scripts -->
+    <script src="script.js" defer></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2555301465901555"
      crossorigin="anonymous"></script>
 </body>
